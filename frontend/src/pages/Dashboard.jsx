@@ -13,6 +13,7 @@ export default function Dashboard() {
   });
 
   const [alerts, setAlerts] = useState([]);
+  const [backendStatus, setBackendStatus] = useState('Checking Connection...');
 
   const API_BASE = "https://nishtiger-1.onrender.com/api";
 
@@ -28,6 +29,7 @@ export default function Dashboard() {
         const tigersData = await tigersRes.json();
 
         if (camerasData.success && tigersData.success) {
+          setBackendStatus('Connected to Backend');
           const cameras = camerasData.data || [];
           const tigers = tigersData.data || [];
 
@@ -40,9 +42,12 @@ export default function Dashboard() {
             warning: cameras.filter(c => c.batteryLevel < 20).length,
             offline: cameras.filter(c => c.status === 'offline').length
           });
+        } else {
+          setBackendStatus('Error: Database failed');
         }
       } catch (error) {
         console.error("Error loading dashboard data:", error);
+        setBackendStatus('Disconnected (API Offline)');
       }
     };
 
@@ -60,7 +65,12 @@ export default function Dashboard() {
     <>
       <section className="hero">
         <div>
-          <span className="live-pill">● SYSTEM ONLINE</span>
+          <span className="live-pill" style={{ 
+            backgroundColor: backendStatus === 'Connected to Backend' ? 'rgba(168, 229, 139, 0.2)' : 'rgba(255, 100, 100, 0.2)', 
+            color: backendStatus === 'Connected to Backend' ? '#a8e58b' : '#ff6464' 
+          }}>
+            ● {backendStatus.toUpperCase()}
+          </span>
           <h2>Camera Trap Command Center</h2>
           <p>Monitor wildlife detections, camera health and tiger movement from one workspace.</p>
           <Link className="primary-btn inline" to="/verification">Upload & Detect Image →</Link>
