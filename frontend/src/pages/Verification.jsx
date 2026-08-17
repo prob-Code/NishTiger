@@ -6,12 +6,15 @@ export default function Verification() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
 
+  const API_BASE = "https://nishtiger-1.onrender.com/api";
+
   const handleImageSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const reader = new FileReader();
       reader.onload = (event) => {
         setSelectedImage({
+          file: file,
           url: event.target.result,
           name: file.name,
           size: (file.size / 1024 / 1024).toFixed(2) + ' MB'
@@ -22,20 +25,40 @@ export default function Verification() {
     }
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+    if (!selectedImage?.file) return;
     setIsAnalyzing(true);
-    // Mock analysis delay
-    setTimeout(() => {
-      setResult({
-        class: 'Tiger',
-        confidence: 94.2,
-        individual: 'Possible T-38',
-        status: 'Match Found',
-        note: 'High confidence match. Immediate triage recommended.',
-        raw: '{\n  "box_2d": [140, 52, 450, 310],\n  "class": "tiger",\n  "conf": 0.9423\n}'
+    setResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", selectedImage.file);
+
+      const response = await fetch(`${API_BASE}/ai/upload`, {
+        method: "POST",
+        body: formData,
       });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setResult({
+          class: data.result.label || data.result.species,
+          confidence: data.result.confidence,
+          individual: data.result.individual,
+          status: data.result.status,
+          note: data.result.note,
+          raw: JSON.stringify(data.predictions, null, 2)
+        });
+      } else {
+        alert(data.message || "Failed to analyze image");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error connecting to AI backend");
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   return (

@@ -14,24 +14,46 @@ export default function Dashboard() {
 
   const [alerts, setAlerts] = useState([]);
 
+  const API_BASE = "https://nishtiger-1.onrender.com/api";
+
   useEffect(() => {
-    // Mock data load
-    setTimeout(() => {
-      setStats({
-        tigersMonitored: 12,
-        cameraStations: 45,
-        imagesProcessed: '12,450',
-        activeAlerts: 2,
-        online: 38,
-        warning: 5,
-        offline: 2
-      });
-      setAlerts([
-        { level: 'critical', title: 'Intrusion Detected', detail: 'Human presence detected near Zone 4 boundary.', time: '10 mins ago' },
-        { level: 'warning', title: 'Low Battery', detail: 'Camera PTR-C05 is below 15% battery.', time: '1 hour ago' },
-        { level: 'high', title: 'New Tiger Individual', detail: 'Unrecognized stripe pattern at Camera 12.', time: '3 hours ago' },
-      ]);
-    }, 500);
+    const fetchStats = async () => {
+      try {
+        const [camerasRes, tigersRes] = await Promise.all([
+          fetch(`${API_BASE}/cameras`),
+          fetch(`${API_BASE}/tigers`)
+        ]);
+
+        const camerasData = await camerasRes.json();
+        const tigersData = await tigersRes.json();
+
+        if (camerasData.success && tigersData.success) {
+          const cameras = camerasData.data || [];
+          const tigers = tigersData.data || [];
+
+          setStats({
+            tigersMonitored: tigers.length,
+            cameraStations: cameras.length,
+            imagesProcessed: '12,450', // Still mock since we don't have a count API for images
+            activeAlerts: 2,
+            online: cameras.filter(c => c.status === 'active').length,
+            warning: cameras.filter(c => c.batteryLevel < 20).length,
+            offline: cameras.filter(c => c.status === 'offline').length
+          });
+        }
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      }
+    };
+
+    fetchStats();
+
+    // Mock alerts for now
+    setAlerts([
+      { level: 'critical', title: 'Intrusion Detected', detail: 'Human presence detected near Zone 4 boundary.', time: '10 mins ago' },
+      { level: 'warning', title: 'Low Battery', detail: 'Camera PTR-C05 is below 15% battery.', time: '1 hour ago' },
+      { level: 'high', title: 'New Tiger Individual', detail: 'Unrecognized stripe pattern at Camera 12.', time: '3 hours ago' },
+    ]);
   }, []);
 
   return (
