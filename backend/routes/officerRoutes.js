@@ -1,16 +1,37 @@
 const express = require('express');
 const router = express.Router();
-const Officer = require('../models/Officer');
+const supabase = require('../config/supabase');
+
+const mapOfficerToFrontend = (officer) => {
+  if (!officer) return null;
+  return {
+    _id: officer.id,
+    id: officer.id,
+    officerId: officer.officer_id,
+    name: officer.name,
+    email: officer.email,
+    station: officer.station,
+    role: officer.role,
+    createdAt: officer.created_at,
+    updatedAt: officer.updated_at
+  };
+};
 
 // Get all officers
 router.get('/officers', async (req, res) => {
   try {
-    const officers = await Officer.find().select('-password').sort({ createdAt: -1 });
+    const { data: officers, error } = await supabase
+      .from('officers')
+      .select('id, officer_id, name, email, station, role, created_at, updated_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
     res.json({ 
       success: true, 
       message: 'Officers retrieved successfully',
       count: officers.length,
-      data: officers 
+      data: officers.map(mapOfficerToFrontend) 
     });
   } catch (error) {
     res.status(500).json({ 
@@ -24,7 +45,14 @@ router.get('/officers', async (req, res) => {
 // Get single officer
 router.get('/officers/:id', async (req, res) => {
   try {
-    const officer = await Officer.findById(req.params.id).select('-password');
+    const { data: officer, error } = await supabase
+      .from('officers')
+      .select('id, officer_id, name, email, station, role, created_at, updated_at')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+
     if (!officer) {
       return res.status(404).json({ 
         success: false, 
@@ -33,7 +61,7 @@ router.get('/officers/:id', async (req, res) => {
     }
     res.json({ 
       success: true, 
-      data: officer 
+      data: mapOfficerToFrontend(officer) 
     });
   } catch (error) {
     res.status(500).json({ 
@@ -48,7 +76,6 @@ router.post('/officers', async (req, res) => {
   try {
     const { officerId, name, email, password, station, role } = req.body;
 
-    // Validation
     if (!officerId || !name || !email || !password || !station) {
       return res.status(400).json({ 
         success: false, 
@@ -57,39 +84,37 @@ router.post('/officers', async (req, res) => {
     }
 
     // Check if officer already exists
-    const existingOfficer = await Officer.findOne({ 
-      $or: [{ officerId }, { email }] 
-    });
+    const { data: existing } = await supabase
+      .from('officers')
+      .select('id')
+      .or(`officer_id.eq.${officerId},email.eq.${email}`);
 
-    if (existingOfficer) {
+    if (existing && existing.length > 0) {
       return res.status(400).json({ 
         success: false, 
         message: 'Officer ID or email already registered' 
       });
     }
 
-    // Note: In production, hash the password using bcrypt
-    const newOfficer = new Officer({
-      officerId,
-      name,
-      email,
-      password, // TODO: Hash this with bcrypt before saving
-      station,
-      role: role || 'officer'
-    });
+    const { data: newOfficer, error } = await supabase
+      .from('officers')
+      .insert([{
+        officer_id: officerId,
+        name,
+        email,
+        password, // TODO: Hash this with bcrypt before saving
+        station,
+        role: role || 'officer'
+      }])
+      .select()
+      .single();
 
-    await newOfficer.save();
+    if (error) throw error;
 
     res.status(201).json({ 
       success: true, 
       message: 'Officer registered successfully',
-      data: {
-        _id: newOfficer._id,
-        officerId: newOfficer.officerId,
-        name: newOfficer.name,
-        email: newOfficer.email,
-        role: newOfficer.role
-      }
+      data: mapOfficerToFrontend(newOfficer)
     });
   } catch (error) {
     res.status(400).json({ 
@@ -112,7 +137,13 @@ router.post('/officers/login', async (req, res) => {
       });
     }
 
-    const officer = await Officer.findOne({ officerId });
+    const { data: officer, error } = await supabase
+      .from('officers')
+      .select('*')
+      .eq('officer_id', officerId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
 
     if (!officer) {
       return res.status(401).json({ 
@@ -132,14 +163,7 @@ router.post('/officers/login', async (req, res) => {
     res.json({ 
       success: true, 
       message: 'Login successful',
-      data: {
-        _id: officer._id,
-        officerId: officer.officerId,
-        name: officer.name,
-        email: officer.email,
-        station: officer.station,
-        role: officer.role
-      }
+      data: mapOfficerToFrontend(officer)
     });
   } catch (error) {
     res.status(500).json({ 
@@ -153,14 +177,23 @@ router.post('/officers/login', async (req, res) => {
 // Update officer
 router.put('/officers/:id', async (req, res) => {
   try {
-    // Prevent password update via this route
     const { password, ...updateData } = req.body;
+    
+    const dbUpdate = { updated_at: new Date() };
+    if (updateData.officerId) dbUpdate.officer_id = updateData.officerId;
+    if (updateData.name) dbUpdate.name = updateData.name;
+    if (updateData.email) dbUpdate.email = updateData.email;
+    if (updateData.station) dbUpdate.station = updateData.station;
+    if (updateData.role) dbUpdate.role = updateData.role;
 
-    const officer = await Officer.findByIdAndUpdate(
-      req.params.id,
-      { ...updateData, updatedAt: new Date() },
-      { new: true, runValidators: true }
-    ).select('-password');
+    const { data: officer, error } = await supabase
+      .from('officers')
+      .update(dbUpdate)
+      .eq('id', req.params.id)
+      .select('id, officer_id, name, email, station, role, created_at, updated_at')
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
 
     if (!officer) {
       return res.status(404).json({ 
@@ -172,7 +205,7 @@ router.put('/officers/:id', async (req, res) => {
     res.json({ 
       success: true, 
       message: 'Officer updated successfully',
-      data: officer 
+      data: mapOfficerToFrontend(officer) 
     });
   } catch (error) {
     res.status(400).json({ 
@@ -186,7 +219,14 @@ router.put('/officers/:id', async (req, res) => {
 // Delete officer
 router.delete('/officers/:id', async (req, res) => {
   try {
-    const officer = await Officer.findByIdAndDelete(req.params.id);
+    const { data: officer, error } = await supabase
+      .from('officers')
+      .delete()
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
 
     if (!officer) {
       return res.status(404).json({ 
@@ -211,11 +251,17 @@ router.delete('/officers/:id', async (req, res) => {
 // Get officers by role
 router.get('/officers/role/:role', async (req, res) => {
   try {
-    const officers = await Officer.find({ role: req.params.role }).select('-password');
+    const { data: officers, error } = await supabase
+      .from('officers')
+      .select('id, officer_id, name, email, station, role, created_at, updated_at')
+      .eq('role', req.params.role);
+
+    if (error) throw error;
+
     res.json({ 
       success: true, 
       count: officers.length,
-      data: officers 
+      data: officers.map(mapOfficerToFrontend) 
     });
   } catch (error) {
     res.status(500).json({ 
@@ -228,11 +274,17 @@ router.get('/officers/role/:role', async (req, res) => {
 // Get officers by station
 router.get('/officers/station/:station', async (req, res) => {
   try {
-    const officers = await Officer.find({ station: req.params.station }).select('-password');
+    const { data: officers, error } = await supabase
+      .from('officers')
+      .select('id, officer_id, name, email, station, role, created_at, updated_at')
+      .eq('station', req.params.station);
+
+    if (error) throw error;
+
     res.json({ 
       success: true, 
       count: officers.length,
-      data: officers 
+      data: officers.map(mapOfficerToFrontend) 
     });
   } catch (error) {
     res.status(500).json({ 

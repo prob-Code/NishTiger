@@ -8,7 +8,7 @@ const envPath = fs.existsSync(path.join(__dirname, ".env"))
   : path.join(__dirname, "..", ".env");
 require("dotenv").config({ path: envPath });
 
-const connectDB = require("./config/db");
+const supabase = require("./config/supabase");
 const apiRoutes = require("./routes/apiRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const officerRoutes = require("./routes/officerRoutes");
@@ -18,8 +18,12 @@ const cameraTrapRoutes = require("./routes/cameraTrapRoutes");
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
 
-// Connect to Database
-connectDB();
+// Verify Supabase Config
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+  console.warn("⚠️  SUPABASE_URL or SUPABASE_KEY is missing from environment variables.");
+} else {
+  console.log("✓ Supabase Client Initialized");
+}
 
 const frontendPath = path.join(__dirname, "..", "frontend");
 const uploadsPath = path.join(__dirname, "uploads");
