@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TigerTrace | AI Verification</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><span>🐅</span><div><b>TigerTrace</b><small>IoT Intelligence</small></div></div>
+    <nav>
+      <small>COMMAND CENTER</small>
+      <a href="dashboard.html">🏠 Dashboard</a>
+      <a class="active" href="verification.html">🔎 AI Verification</a>
+      <a href="cameras.html">📷 Camera Traps</a>
+      <a href="tigers.html">🐅 Tigers</a>
+      <a href="movement.html">🗺️ Movement</a>
+      <a href="alerts.html">🚨 Alerts</a>
+      <small>ANALYSIS</small>
+      <a href="analytics.html">📊 Analytics</a>
+      <a href="reports.html">📄 Reports</a>
+      <small>FIELD</small>
+      <a href="field.html">🌲 Field Operations</a>
+      <a href="assistant.html">🧠 AI Assistant</a>
+      <a href="settings.html">⚙️ Settings</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><p class="eyebrow">AI CAMERA-TRAP TRIAGE</p><h1>Image Verification</h1></div>
+      <a class="secondary-btn" href="dashboard.html">← Dashboard</a>
+    </header>
+
+    <section class="verification-layout">
+      <div class="card upload-card">
+        <div class="card-head"><div><h2>Upload camera-trap image</h2><p>JPG, PNG or WEBP • maximum 10 MB</p></div><span class="status-dot">AI READY</span></div>
+
+        <input id="imageInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+
+        <label for="imageInput" class="dropzone" id="dropzone">
+          <div class="upload-icon">📷</div>
+          <h3>Choose an image</h3>
+          <p>Click here to browse or drag a camera-trap image into this area.</p>
+          <span class="secondary-btn">Select image</span>
+        </label>
+
+        <div id="previewWrap" class="preview-wrap hidden">
+          <img id="previewImage" alt="Selected camera trap image">
+          <div class="file-meta"><span id="fileName">—</span><span id="fileSize">—</span></div>
+        </div>
+
+        <button id="analyzeBtn" class="primary-btn full" disabled>🔍 Upload & Detect</button>
+        <div id="uploadMessage" class="message hidden"></div>
+      </div>
+
+      <div class="card result-card">
+        <div class="card-head"><div><h2>AI Result</h2><p>Species-level camera-trap triage</p></div></div>
+        <div id="resultEmpty" class="empty-state">
+          <div>🤖</div>
+          <h3>No image analysed yet</h3>
+          <p>Upload an image to see the detection result.</p>
+        </div>
+
+        <div id="resultContent" class="hidden">
+          <div id="resultBadge" class="result-badge">—</div>
+          <div class="confidence"><span>Confidence</span><strong id="confidenceValue">0%</strong></div>
+          <div class="confidence-bar"><div id="confidenceBar"></div></div>
+          <div class="result-grid">
+            <div><small>Individual</small><b id="individual">—</b></div>
+            <div><small>Status</small><b id="resultStatus">—</b></div>
+            <div><small>Camera</small><b>PTR-C03</b></div>
+            <div><small>Zone</small><b>Sitaghat</b></div>
+          </div>
+          <div id="resultNote" class="info-box"></div>
+          <details class="raw-box">
+            <summary>Raw AI predictions</summary>
+            <pre id="rawResult"></pre>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="js/api.js"></script>
+<script src="js/verification.js"></script>
+</body>
+</html>

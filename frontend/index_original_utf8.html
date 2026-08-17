@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vyaghravana | Login</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="brand-mark">🐅</div>
+    <p class="eyebrow">PENCH TIGER RESERVE</p>
+    <h1>Vyaghravana</h1>
+    <p class="muted">IoT Wildlife Intelligence & Camera Trap Triage</p>
+
+    <form id="loginForm">
+      <label>Officer ID</label>
+      <input id="officerId" value="FOREST-001" required>
+
+      <label>Access PIN</label>
+      <input id="pin" type="password" value="1234" required>
+
+      <button class="primary-btn" type="submit">Enter Command Center</button>
+    </form>
+
+    <p class="login-note">Prototype access • Manthan 4 Yuva</p>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      location.href = "dashboard.html";
+    });
+  </script>
+</body>
+</html>
